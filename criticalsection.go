@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const maxSleepCycle = 8
+const maxSleepCycle = 14
 
 // A CriticalSection is a kind of lock like mutex. But it doesn't block
 // first locked goroutine again.
@@ -33,7 +33,7 @@ func (cs *CriticalSection) Lock() {
 		}
 		cs.mu.Unlock()
 		runtime.Gosched()
-		time.Sleep(time.Duration(1<<i) * 1 * time.Millisecond)
+		time.Sleep(time.Duration(1<<i) * 1 * time.Nanosecond)
 		i++
 		if i >= maxSleepCycle {
 			i = 0
