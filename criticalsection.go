@@ -1,6 +1,7 @@
 package criticalsection
 
 import (
+	"runtime"
 	"sync"
 	"time"
 )
@@ -31,6 +32,7 @@ func (cs *CriticalSection) Lock() {
 			break
 		}
 		cs.mu.Unlock()
+		runtime.Gosched()
 		time.Sleep(time.Duration(1<<i) * 1 * time.Millisecond)
 		i++
 		if i >= maxSleepCycle {
