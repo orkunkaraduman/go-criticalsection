@@ -9,7 +9,7 @@ import (
 const maxSleepCycle = 6
 
 // A CriticalSection is a kind of lock like mutex. But it doesn't block
-// first locked section again.
+// first locked goroutine/section again.
 //
 // A CriticalSection must not be copied after first use.
 type CriticalSection struct {
@@ -59,7 +59,7 @@ func (cs *CriticalSection) Unlock() {
 	cs.mu.Unlock()
 }
 
-// LockSection locks cs by given section.
+// LockSection locks cs by given section. LockSection is faster than Lock().
 // If the lock is already in use different section, the different
 // section blocks until the CriticalSection is available.
 func (cs *CriticalSection) LockSection(sc Section) {
