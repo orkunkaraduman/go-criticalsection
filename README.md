@@ -35,6 +35,7 @@ func main() {
 		fmt.Println("forloop: ", f)
 		cs.Unlock()
 	}
+	fmt.Println("mainfunc: ", f)
 	cs.Unlock()
 	time.Sleep(1 * time.Second)
 	fmt.Println("mainfunc: ", f)
