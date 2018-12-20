@@ -1,12 +1,8 @@
 package criticalsection
 
 import (
-	"runtime"
 	"sync"
-	"time"
 )
-
-const maxSleepCycle = 6
 
 // A CriticalSection is a kind of lock like mutex. But it doesn't block
 // first locked goroutine/section again.
@@ -14,6 +10,7 @@ const maxSleepCycle = 6
 // A CriticalSection must not be copied after first use.
 type CriticalSection struct {
 	mu sync.Mutex
+	c  chan struct{}
 	v  int32
 	id uint64
 	sc Section
@@ -24,9 +21,11 @@ type CriticalSection struct {
 // goroutine blocks until the CriticalSection is available.
 func (cs *CriticalSection) Lock() {
 	id := getGID()
-	i := uint(0)
 	for {
 		cs.mu.Lock()
+		if cs.c == nil {
+			cs.c = make(chan struct{}, 1)
+		}
 		if cs.v == 0 || cs.id == id {
 			cs.v++
 			cs.id = id
@@ -34,12 +33,7 @@ func (cs *CriticalSection) Lock() {
 			break
 		}
 		cs.mu.Unlock()
-		runtime.Gosched()
-		time.Sleep(time.Duration(1<<i) * 1 * time.Millisecond)
-		i++
-		if i >= maxSleepCycle {
-			i = 0
-		}
+		<-cs.c
 	}
 }
 
@@ -47,6 +41,9 @@ func (cs *CriticalSection) Lock() {
 // It panics if cs is not locked on entry to Unlock.
 func (cs *CriticalSection) Unlock() {
 	cs.mu.Lock()
+	if cs.c == nil {
+		cs.c = make(chan struct{}, 1)
+	}
 	if cs.v < 0 {
 		cs.mu.Unlock()
 		panic(ErrNotLocked)
@@ -57,15 +54,21 @@ func (cs *CriticalSection) Unlock() {
 		cs.sc = 0
 	}
 	cs.mu.Unlock()
+	select {
+	case cs.c <- struct{}{}:
+	default:
+	}
 }
 
 // LockSection locks cs by given section. LockSection is faster than Lock().
 // If the lock is already in use different section, the different
 // section blocks until the CriticalSection is available.
 func (cs *CriticalSection) LockSection(sc Section) {
-	i := uint(0)
 	for {
 		cs.mu.Lock()
+		if cs.c == nil {
+			cs.c = make(chan struct{}, 1)
+		}
 		if cs.v == 0 || cs.sc == sc {
 			cs.v++
 			cs.sc = sc
@@ -73,11 +76,6 @@ func (cs *CriticalSection) LockSection(sc Section) {
 			break
 		}
 		cs.mu.Unlock()
-		runtime.Gosched()
-		time.Sleep(time.Duration(1<<i) * 1 * time.Millisecond)
-		i++
-		if i >= maxSleepCycle {
-			i = 0
-		}
+		<-cs.c
 	}
 }
