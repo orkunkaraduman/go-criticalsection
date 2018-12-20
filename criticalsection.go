@@ -44,7 +44,7 @@ func (cs *CriticalSection) Unlock() {
 	if cs.c == nil {
 		cs.c = make(chan struct{}, 1)
 	}
-	if cs.v < 0 {
+	if cs.v <= 0 {
 		cs.mu.Unlock()
 		panic(ErrNotLocked)
 	}
