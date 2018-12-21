@@ -1,6 +1,7 @@
 package criticalsection
 
 import (
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"unsafe"
@@ -12,7 +13,7 @@ import (
 // A CriticalSection must not be copied after first use.
 type CriticalSection struct {
 	mu sync.Mutex
-	c  *chan struct{}
+	c  chan struct{}
 	v  int32
 	id uint64
 	sc uint64
@@ -47,7 +48,7 @@ func (cs *CriticalSection) Unlock() {
 		panic(ErrNotLocked)
 	}
 	select {
-	case *cs.c <- struct{}{}:
+	case cs.c <- struct{}{}:
 	default:
 	}
 }
@@ -57,13 +58,18 @@ func (cs *CriticalSection) Unlock() {
 // section blocks until the CriticalSection is available.
 func (cs *CriticalSection) LockSection(sc Section) {
 	for {
-		c := make(chan struct{}, 1)
-		if !atomic.CompareAndSwapPointer(
-			(*unsafe.Pointer)(unsafe.Pointer(&cs.c)),
-			nil,
-			(unsafe.Pointer)(unsafe.Pointer(&c))) {
-			close(c)
-			c = nil
+		if atomic.CompareAndSwapPointer(
+			(*unsafe.Pointer)(unsafe.Pointer(&cs.c)), nil, nil) {
+			c := make(chan struct{}, 1)
+			if atomic.CompareAndSwapPointer(
+				(*unsafe.Pointer)(unsafe.Pointer(&cs.c)),
+				nil,
+				*(*unsafe.Pointer)(unsafe.Pointer(&c))) {
+				runtime.KeepAlive(cs.c)
+			} else {
+				close(c)
+				c = nil
+			}
 		}
 		if atomic.AddInt32(&cs.v, 1) == 1 {
 			cs.id = 0
@@ -74,6 +80,6 @@ func (cs *CriticalSection) LockSection(sc Section) {
 			break
 		}
 		atomic.AddInt32(&cs.v, -1)
-		<-*cs.c
+		<-cs.c
 	}
 }
