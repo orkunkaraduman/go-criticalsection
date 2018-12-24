@@ -5,7 +5,7 @@
 The repository provides `criticalsection` package.
 
 A CriticalSection is a kind of lock like mutex. But it doesn't block
-first locked goroutine again.
+first locked goroutine/section again.
 
 ## Example
 
