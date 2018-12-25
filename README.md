@@ -1,3 +1,7 @@
+# DISCONTINUED
+
+Please visit: [github.com/orkunkaraduman/go-syncex](https://github.com/orkunkaraduman/go-syncex)
+
 # Go CriticalSection
 
 [![GoDoc](https://godoc.org/github.com/orkunkaraduman/go-criticalsection?status.svg)](https://godoc.org/github.com/orkunkaraduman/go-criticalsection)

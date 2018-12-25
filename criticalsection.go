@@ -1,3 +1,4 @@
+// Package criticalsection is discontinued. Please visit: github.com/orkunkaraduman/go-syncex
 package criticalsection
 
 import (
